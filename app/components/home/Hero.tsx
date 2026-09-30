@@ -1,19 +1,47 @@
-import React from "react";
-import Link from "next/link";
+"use client";
+
+import React, { useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faBolt,
   faGaugeHigh,
   faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import ScooterImage from "./ScooterImage";
+import Button from "../ui/Button";
 
 const Hero = () => {
+  const heroContentRef = useRef<HTMLDivElement>(null);
+  const specsRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      // Cinematic initial entrance animation
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+      tl.from(heroContentRef.current, {
+        opacity: 0,
+        y: 28,
+        duration: 1.1,
+      }).from(
+        specsRef.current?.children || [],
+        {
+          opacity: 0,
+          x: 20,
+          stagger: 0.1,
+          duration: 0.8,
+        },
+        "-=0.6"
+      );
+    },
+    { scope: heroContentRef }
+  );
+
   return (
     <section
       id="hero-section"
       className="relative w-full min-h-screen pt-14 bg-[#0C0D0C] 
-    bg-[radial-gradient(ellipse_at_55%_48%,#1C1E1C_0%,#0E100E_55%,#080908_100%)] 
     overflow-x-clip flex flex-col justify-between select-none"
     >
       {/* Background Vertical MOPED Typography */}
@@ -33,57 +61,58 @@ const Hero = () => {
       >
         {/* Content Row */}
         <div className="relative w-full flex-1 flex items-center justify-between min-h-135">
-          {/* LEFT: Headline & Description */}
-          <div className="max-w-135 z-20 flex flex-col items-start">
-            {/* Top Label with Yellow Badge */}
+          {/* LEFT: Headline & Story Introduction */}
+          <div
+            ref={heroContentRef}
+            className="max-w-135 z-20 flex flex-col items-start"
+          >
+            {/* Small Eyebrow with Accent Badge */}
             <div className="flex items-center gap-3">
-              <span className="text-white text-3xl lg:text-4xl font-light font-heading tracking-tight">
-                Best Quality
-              </span>
-              <span
-                className="inline-flex items-center justify-center px-4 py-1 rounded-full border 
-              border-secondary text-secondary"
-              >
-                <FontAwesomeIcon icon={faBolt} className="w-3 h-3" />
+              <span className="font-heading text-xs font-semibold tracking-[0.2em] text-secondary uppercase">
+                THE FUTURE OF URBAN MOBILITY
               </span>
             </div>
 
-            {/* Main Title */}
-            <h1
-              className="text-4xl lg:text-5xl xl:text-6xl font-bold font-heading text-white 
-            mt-3"
-            >
-              RIDE THE FUTURE. YOUR WAY.
+            {/* Main Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold font-heading text-white tracking-tight mt-3 leading-[1.04]">
+              RIDE THE FUTURE.
+              <br />
+              <span className="text-white/90">YOUR WAY.</span>
             </h1>
 
-            {/* Subtitle */}
-            <p
-              className="text-gray-500 text-xs sm:text-sm font-sans font-normal max-w-90 mt-5 
-            leading-relaxed"
-            >
-              Discover electric scooters from leading brands, all in one place
+            {/* Short Supporting Copy - Human & Concise */}
+            <p className="text-[#92958F] text-xs sm:text-sm font-sans font-normal max-w-95 mt-5 leading-relaxed">
+              Everyday urban movement, made simpler, quieter, and effortlessly personal. Designed to bring freedom back to your daily commute.
             </p>
 
             {/* CTA Button */}
-            <Link
-              href="/order"
-              className="mt-8 inline-flex items-center justify-center w-50 px-6 py-3 rounded-full
-               bg-white/[0.07] border border-white/20 text-white font-heading
-                 text-sm font-medium cursor-pointer"
-            >
-              <span>EXPLORE COLLECTION</span>
-            </Link>
+            <div className="mt-8">
+              <Button
+                href="/order"
+                variant="secondary"
+                size="lg"
+                className="uppercase tracking-wider font-semibold text-xs sm:text-sm shadow-lg 
+                shadow-secondary/15 hover:shadow-secondary/25"
+              >
+                EXPLORE THE RIDES
+              </Button>
+            </div>
           </div>
 
-          {/* CENTER: Dedicated Animated Scooter Image Component */}
+          {/* CENTER: Dedicated Animated 3D Scooter Component */}
           <ScooterImage />
 
           {/* RIGHT: Floating Specification Cards */}
-          <div className="hidden md:flex flex-col gap-4 z-20">
+          <div
+            ref={specsRef}
+            className="hidden md:flex flex-col gap-4 z-20"
+          >
             {/* Motor Power */}
-            <div className="flex items-center gap-4 px-5 py-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-md min-w-50">
+            <div className="flex items-center gap-4 px-5 py-3 rounded-full bg-white/5 border
+             border-white/10 backdrop-blur-md min-w-50">
               <div
-                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center
+                 justify-center
                text-white/80 shrink-0"
               >
                 <svg
@@ -123,7 +152,8 @@ const Hero = () => {
             border border-white/10 backdrop-blur-md min-w-50"
             >
               <div
-                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex 
+                items-center justify-center
                text-white/80 shrink-0"
               >
                 <FontAwesomeIcon
@@ -147,7 +177,8 @@ const Hero = () => {
             border border-white/10 backdrop-blur-md min-w-50"
             >
               <div
-                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex 
+                items-center justify-center
                text-white/80 shrink-0"
               >
                 <FontAwesomeIcon
