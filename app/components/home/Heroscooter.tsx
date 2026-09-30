@@ -3,8 +3,8 @@
 import React from "react";
 import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
+import type { ThreeElements } from "@react-three/fiber";
 import type { GLTF } from "three-stdlib";
-import type { GroupProps } from "@react-three/fiber";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -19,7 +19,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-export function HeroScooter(props: GroupProps) {
+export function HeroScooter(props: ThreeElements["group"]) {
   const { nodes, materials } = useGLTF(
     "/3D/heroscooter.glb"
   ) as unknown as GLTFResult;
