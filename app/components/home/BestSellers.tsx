@@ -1,15 +1,8 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 interface Spec {
   label: string;
@@ -56,7 +49,7 @@ const BEST_SELLERS: Product[] = [
     tagline: "Floating Monoshock Architecture",
     description:
       "Radical naked-street geometry featuring dual-motor dynamics, high-visibility LED matrix illumination, and CBS performance disc braking.",
-    image: "/image/products/miku_super_stage.png",
+    image: "/image/product1.png",
     price: "$2,890",
     specs: [
       { label: "RANGE", value: "100 KM" },
@@ -92,7 +85,7 @@ const BEST_SELLERS: Product[] = [
     tagline: "Integrated Audio & Telemetry",
     description:
       "Built-in Bluetooth stereo acoustic system, digital cockpit, and dual-speed performance tailored for high-energy city riders.",
-    image: "/image/products/hawk_stage.png",
+    image: "/image/.png",
     price: "$2,190",
     specs: [
       { label: "RANGE", value: "80 KM" },
@@ -105,291 +98,238 @@ const BEST_SELLERS: Product[] = [
 ];
 
 export const BestSellers: React.FC = () => {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const triggerRef = useRef<ScrollTrigger | null>(null);
-
   const [activeIndex, setActiveIndex] = useState(0);
-
+  const [direction, setDirection] = useState<"next" | "prev">("next");
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const total = BEST_SELLERS.length;
 
-  useGSAP(
-    () => {
-      const section = sectionRef.current;
-      if (!section) return;
+  const handleNext = useCallback(() => {
+    setDirection("next");
+    setActiveIndex((prev) => (prev + 1) % total);
+  }, [total]);
 
-      const slides = slideRefs.current.filter(Boolean) as HTMLDivElement[];
-      if (slides.length === 0) return;
+  const handlePrev = useCallback(() => {
+    setDirection("prev");
+    setActiveIndex((prev) => (prev - 1 + total) % total);
+  }, [total]);
 
-      // Initialize all slide opacities and transforms
-      slides.forEach((slide, idx) => {
-        const image = slide.querySelector(".product-image-container");
-        const content = slide.querySelector(".product-content-container");
-
-        if (idx === 0) {
-          gsap.set(slide, { opacity: 1, pointerEvents: "auto", visibility: "visible" });
-          if (image) gsap.set(image, { opacity: 1, scale: 1, y: 0 });
-          if (content) gsap.set(content, { opacity: 1, y: 0 });
-        } else {
-          gsap.set(slide, { opacity: 0, pointerEvents: "none", visibility: "hidden" });
-          if (image) gsap.set(image, { opacity: 0, scale: 0.92, y: 40 });
-          if (content) gsap.set(content, { opacity: 0, y: 30 });
-        }
-      });
-
-      // Total scroll distance for the pinned sequence
-      const scrollDistance = (total - 1) * (typeof window !== "undefined" ? window.innerHeight : 900) * 1.1;
-
-      // Master Timeline pinned to section
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          pin: true,
-          start: "top top",
-          end: `+=${scrollDistance}`,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            const progress = self.progress;
-            const computedIndex = Math.min(
-              total - 1,
-              Math.max(0, Math.floor(progress * total + 0.05))
-            );
-            setActiveIndex(computedIndex);
-          },
-        },
-      });
-
-      triggerRef.current = tl.scrollTrigger ?? null;
-
-      // Build transitions between each product
-      for (let i = 0; i < total - 1; i++) {
-        const currentSlide = slides[i];
-        const nextSlide = slides[i + 1];
-
-        const currentImg = currentSlide?.querySelector(".product-image-container");
-        const currentContent = currentSlide?.querySelector(".product-content-container");
-        const nextImg = nextSlide?.querySelector(".product-image-container");
-        const nextContent = nextSlide?.querySelector(".product-content-container");
-
-        const stepLabel = `step_${i}`;
-        tl.addLabel(stepLabel);
-
-        // Current product exits
-        if (currentImg) {
-          tl.to(
-            currentImg,
-            {
-              opacity: 0,
-              scale: 1.04,
-              y: -30,
-              duration: 1.0,
-              ease: "power2.in",
-            },
-            stepLabel
-          );
-        }
-
-        if (currentContent) {
-          tl.to(
-            currentContent,
-            {
-              opacity: 0,
-              y: -20,
-              duration: 0.8,
-              ease: "power2.in",
-            },
-            stepLabel
-          );
-        }
-
-        tl.to(
-          currentSlide,
-          {
-            opacity: 0,
-            visibility: "hidden",
-            pointerEvents: "none",
-            duration: 0.1,
-          },
-          `${stepLabel}+=0.8`
-        );
-
-        // Next product enters
-        tl.to(
-          nextSlide,
-          {
-            opacity: 1,
-            visibility: "visible",
-            pointerEvents: "auto",
-            duration: 0.1,
-          },
-          `${stepLabel}+=0.5`
-        );
-
-        if (nextImg) {
-          tl.fromTo(
-            nextImg,
-            { opacity: 0, scale: 0.92, y: 40 },
-            { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: "power2.out" },
-            `${stepLabel}+=0.5`
-          );
-        }
-
-        if (nextContent) {
-          tl.fromTo(
-            nextContent,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" },
-            `${stepLabel}+=0.65`
-          );
-        }
-      }
+  const handleGoTo = useCallback(
+    (index: number) => {
+      if (index === activeIndex) return;
+      setDirection(index > activeIndex ? "next" : "prev");
+      setActiveIndex(index);
     },
-    { scope: sectionRef }
+    [activeIndex]
   );
 
-  // Smooth scroll jump when clicking product indicator (01, 02, 03, 04)
-  const handleJumpToProduct = useCallback(
-    (targetIndex: number) => {
-      if (!triggerRef.current) return;
-      const st = triggerRef.current;
-      const progressTarget = targetIndex / (total - 1);
-      const scrollPos = st.start + progressTarget * (st.end - st.start);
+  // Autoplay carousel every 6 seconds unless paused on hover
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      handleNext();
+    }, 6000);
 
-      window.scrollTo({
-        top: scrollPos,
-        behavior: "smooth",
-      });
-    },
-    [total]
-  );
+    return () => clearInterval(interval);
+  }, [handleNext, isPaused]);
+
+  // Keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") handleNext();
+      if (e.key === "ArrowLeft") handlePrev();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleNext, handlePrev]);
+
+  // Touch swipe support for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    if (deltaX > 50) {
+      handlePrev();
+    } else if (deltaX < -50) {
+      handleNext();
+    }
+    touchStartX.current = null;
+  };
 
   return (
     <section
-      ref={sectionRef}
       id="best-sellers-section"
-      className="relative w-full h-screen min-h-[640px] bg-[#0C0D0C] select-none overflow-hidden flex flex-col justify-between"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="relative w-full lg:py-28 bg-[#0C0D0C] select-none overflow-hidden 
+      flex flex-col justify-between"
     >
-      {/* ============================================================
-          1. PERMANENT GARAGE BACKGROUND STAGE (High Visibility)
-         ============================================================ */}
-      <div className="absolute inset-0 w-full h-full -z-20 overflow-hidden pointer-events-none">
+      {/* Background Vertical MOPED Typography */}
+      <div className="absolute right-4 xl:right-10 top-1/2 -translate-y-1/2 pointer-events-none select-none z-0">
+        <span className="font-heading font-black text-[11vw] tracking-[0.25em] text-white/[0.035] uppercase [writing-mode:vertical-rl] leading-none">
+          SUNRA
+        </span>
+      </div>
+
+      {/* 1. PERMANENT GARAGE BACKGROUND COVER */}
+      <div className="absolute inset-0 w-full h-full z-0 overflow-hidden pointer-events-none">
         <Image
           src="/image/garage.jpg"
           alt="Sunra Engineering Garage Stage"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center brightness-[0.96] contrast-[1.04]"
+          className="object-cover object-center brightness-[0.95] contrast-[1.05]"
         />
 
-        {/* Subtle, Balanced Ambient Vignette (Keeps Garage Bright & Clearly Visible) */}
+        {/* Ambient Vignette & Gradient Overlays for Readability */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none"
+          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/55 pointer-events-none"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-black/55 pointer-events-none"
+          className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-black/45 pointer-events-none"
         />
       </div>
 
-      {/* ============================================================
-          2. EDITORIAL SECTION HEADER (Top Bar)
-         ============================================================ */}
-      <header className="relative z-30 max-w-360 mx-auto w-full px-6 sm:px-10 lg:px-16 pt-8 sm:pt-10 flex items-center justify-between">
-        <div className="flex flex-col items-start drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-          <span className="font-heading text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#E5B558] uppercase">
-            BEST SELLERS
-          </span>
-          <h2 className="font-heading font-semibold text-lg sm:text-xl lg:text-2xl text-white tracking-tight mt-0.5">
-            Built to move with you.
+      {/* 2. DEDICATED EDITORIAL SECTION HEADING (Styled like Hero & About) */}
+      <div className="relative z-10 max-w-360 mx-auto w-full px-8 xl:px-14 flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 lg:pb-8">
+        <div className="max-w-140 flex flex-col items-start">
+          {/* Eyebrow Accent Badge */}
+          <div className="flex items-center gap-3">
+            <span className="font-heading text-xs font-semibold tracking-[0.2em] text-secondary uppercase">
+              BEST SELLERS
+            </span>
+          </div>
+
+          {/* Main Section Headline */}
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold font-heading text-white tracking-tight mt-3 leading-[1.06]">
+            BUILT TO MOVE WITH YOU.
           </h2>
         </div>
 
-        {/* Top Series Counter Indicator */}
-        <div className="flex items-center gap-2 text-xs font-heading tracking-widest text-white/80 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-md">
-          <span className="text-[#E5B558] font-bold text-sm sm:text-base">
+        {/* Series Counter Badge */}
+        <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+          <span className="text-secondary font-heading font-bold text-sm sm:text-base">
             {BEST_SELLERS[activeIndex].seriesNumber}
           </span>
-          <span>/</span>
-          <span>0{total}</span>
+          <span className="text-white/40 text-xs font-heading">/</span>
+          <span className="text-white/70 text-xs font-heading">0{total}</span>
         </div>
-      </header>
+      </div>
 
-      {/* ============================================================
-          3. PRODUCT SHOWCASE STAGE (One Product Owns Entire Viewport)
-         ============================================================ */}
-      <div className="relative z-20 flex-1 max-w-360 mx-auto w-full px-6 sm:px-10 lg:px-16 flex items-center justify-center">
+      {/* 3. PRODUCT CAROUSEL SHOWCASE STAGE WITH LEFT & RIGHT CONTROLS */}
+      <div className="relative z-20 max-w-360 mx-auto w-full px-8 xl:px-14 min-h-[580px] sm:min-h-[640px]
+       lg:min-h-[700px] flex items-center justify-center my-4">
+        {/* Floating LEFT Carousel Button */}
+        <button
+          onClick={handlePrev}
+          aria-label="Previous Product Slide"
+          className="absolute left-2 sm:left-4 xl:left-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 sm:w-14 sm:h-14 rounded-full
+           bg-black/60 backdrop-blur-xl border border-white/15 hover:border-secondary hover:bg-secondary hover:text-[#0C0D0C] 
+           text-white flex items-center justify-center transition-all duration-300 cursor-pointer shadow-2xl active:scale-90 group"
+        >
+          <svg
+            className="w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 group-hover:-translate-x-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        {/* Floating RIGHT Carousel Button */}
+        <button
+          onClick={handleNext}
+          aria-label="Next Product Slide"
+          className="absolute right-2 sm:right-4 xl:right-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 sm:w-14 sm:h-14
+           rounded-full bg-black/60 backdrop-blur-xl border border-white/15 hover:border-secondary hover:bg-secondary 
+           hover:text-[#0C0D0C] text-white flex items-center justify-center transition-all duration-300 cursor-pointer
+            shadow-2xl active:scale-90 group"
+        >
+          <svg
+            className="w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 group-hover:translate-x-1"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+
+        {/* Product Slides */}
         {BEST_SELLERS.map((product, idx) => {
+          const isActive = activeIndex === idx;
+
+          // Compute directional translate classes based on navigation direction
+          const contentTranslateInitial =
+            direction === "next" ? "translate-x-16" : "-translate-x-16";
+          const contentTranslateExit =
+            direction === "next" ? "-translate-x-16" : "translate-x-16";
+
+          const imageTranslateInitial =
+            direction === "next" ? "translate-x-24" : "-translate-x-24";
+          const imageTranslateExit =
+            direction === "next" ? "-translate-x-24" : "translate-x-24";
+
           return (
             <div
               key={product.id}
-              ref={(el) => {
-                slideRefs.current[idx] = el;
-              }}
-              className="absolute inset-0 w-full h-full flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-14 py-4 lg:py-8 will-change-transform"
+              aria-hidden={!isActive}
+              className={`absolute inset-0 w-full h-full flex flex-col lg:flex-row items-center justify-between gap-8
+                 lg:gap-14 px-8 sm:px-14 xl:px-20 py-2 transition-all duration-700 ease-out ${
+                isActive
+                  ? "opacity-100 pointer-events-auto visible z-10"
+                  : "opacity-0 pointer-events-none invisible z-0"
+              }`}
             >
-              {/* --------------------------------------------------------
-                  LEFT: Large Vehicle Standing Naturally on Garage Floor
-                 -------------------------------------------------------- */}
-              <div className="product-image-container relative flex-1 w-full h-[42vh] sm:h-[50vh] lg:h-[68vh] flex flex-col items-center justify-end will-change-transform select-none">
-                {/* Vehicle Cutout Image */}
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    priority={idx === 0}
-                    sizes="(max-width: 1024px) 90vw, 55vw"
-                    className="object-contain object-bottom drop-shadow-[0_25px_40px_rgba(0,0,0,0.9)]"
-                  />
-                </div>
-
-                {/* Ground Contact Shadow on Concrete Floor */}
-                <div
-                  aria-hidden="true"
-                  className="w-[75%] sm:w-[65%] lg:w-[70%] h-6 sm:h-8 lg:h-10 -mt-3 sm:-mt-5 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.95)_0%,rgba(0,0,0,0.5)_50%,transparent_75%)] blur-md sm:blur-lg rounded-full pointer-events-none"
-                />
-              </div>
-
-              {/* --------------------------------------------------------
-                  RIGHT: Editorial Product Information with Crisp Frosted Backdrop
-                 -------------------------------------------------------- */}
-              <div className="product-content-container relative w-full lg:w-[460px] xl:w-[500px] shrink-0 flex flex-col justify-center text-white will-change-transform p-6 sm:p-8 rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl">
-                {/* Category Tag & Badge */}
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="font-heading text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-[#E5B558] uppercase">
-                    {product.category}
-                  </span>
-                  <span className="h-2.5 w-px bg-white/30" />
-                  <span className="text-[11px] text-white/70 tracking-wider font-heading uppercase">
-                    SERIES {product.seriesNumber}
-                  </span>
-                </div>
-
+              {/* LEFT: Editorial Product Information with directional slide animation */}
+              <div
+                className={`product-content-container relative w-full lg:w-[440px] xl:w-[480px] 
+                  shrink-0 flex flex-col justify-center text-white mr-10 transition-all duration-700 
+                  ease-out delay-75 ${
+                  isActive
+                    ? "translate-x-0 opacity-100"
+                    : `${direction === "next" ? contentTranslateExit : contentTranslateInitial} opacity-0`
+                }`}
+              >
+                <div className="pl-20">
                 {/* Product Name */}
-                <h3 className="font-heading font-black text-3xl sm:text-4xl xl:text-5xl text-white tracking-tight leading-[1.05]">
+                <h3 className="font-heading font-black text-3xl sm:text-4xl xl:text-5xl text-white 
+                tracking-tight">
                   {product.name}
                 </h3>
 
                 {/* Narrative Description */}
-                <p className="text-white/80 text-xs sm:text-sm xl:text-base font-sans mt-2.5 leading-relaxed max-w-120">
+                <p className="text-white text-xs sm:text-sm xl:text-base font-sans mt-2.5 leading-relaxed max-w-120">
                   {product.description}
                 </p>
 
                 {/* 4-Stat Telemetry Specs Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2.5 sm:gap-3 my-4 pt-4 border-t border-white/15">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2.5 sm:gap-3 my-5 pt-4">
                   {product.specs.map((spec) => (
                     <div
                       key={spec.label}
-                      className="p-2.5 sm:p-3 rounded-xl bg-white/[0.06] backdrop-blur-sm border border-white/10 flex flex-col"
+                      className="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col"
                     >
-                      <span className="font-heading font-black text-sm sm:text-base lg:text-lg text-white tracking-tight">
+                      <span className="font-heading font-black text-base sm:text-lg lg:text-xl text-white tracking-tight">
                         {spec.value}
                       </span>
-                      <span className="text-white/50 text-[9px] sm:text-[10px] tracking-widest font-heading uppercase mt-0.5">
+                      <span className="text-foreground-subtle text-[9px] sm:text-[10px] tracking-widest font-heading uppercase mt-0.5">
                         {spec.label}
                       </span>
                     </div>
@@ -397,82 +337,59 @@ export const BestSellers: React.FC = () => {
                 </div>
 
                 {/* Price and Action CTA */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/15">
+                <div className="flex items-center justify-between pt-4 border-t border-white/15">
                   <div className="flex flex-col">
-                    <span className="text-white/50 text-[10px] uppercase font-heading tracking-widest">
+                    <span className="text-foreground-subtle text-[10px] uppercase font-heading tracking-widest">
                       Starting Price
                     </span>
-                    <span className="font-heading font-black text-xl sm:text-2xl text-white">
+                    <span className="font-heading font-black text-2xl sm:text-3xl text-white">
                       {product.price}
                     </span>
                   </div>
 
                   <Link
                     href={product.href}
-                    className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-white text-[#0C0D0C] font-heading font-semibold text-xs sm:text-sm uppercase tracking-wider hover:bg-[#E5B558] hover:text-[#0C0D0C] transition-all duration-300 shadow-xl group"
+                    className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-secondary text-[#0C0D0C] font-heading font-semibold text-xs sm:text-sm uppercase tracking-wider hover:bg-secondary-hover hover:text-[#0C0D0C] transition-all duration-300 shadow-xl group"
                   >
                     <span>EXPLORE PRODUCT</span>
-                    <svg
-                      className="w-3.5 h-3.5 transform translate-x-0 group-hover:translate-x-1.5 transition-transform duration-300"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M3.33337 8H12.6667M12.6667 8L8.66671 4M12.6667 8L8.66671 12"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
                   </Link>
                 </div>
+                </div>
+              </div>
+
+              {/* RIGHT: Large Vehicle with directional entrance/exit */}
+              <div
+                className={`product-image-container relative flex-1 w-full lg:w-3/5 h-[46vh] sm:h-[56vh] lg:h-[70vh]
+                   xl:h-[76vh] flex flex-col items-center justify-end select-none transition-all duration-700 ease-out delay-150 ${
+                  isActive
+                    ? "translate-x-0 opacity-100 scale-100"
+                    : `${direction === "next" ? imageTranslateExit : imageTranslateInitial} opacity-0 scale-95`
+                }`}
+              >
+                {/* Vehicle Cutout Image */}
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    priority={idx === 0}
+                    sizes="(max-width: 1024px) 95vw, 65vw"
+                    className="object-contain object-bottom drop-shadow-[0_28px_45px_rgba(0,0,0,0.95)]"
+                  />
+                </div>
+
+                {/* Ground Contact Shadow on Concrete Floor */}
+                <div
+                  aria-hidden="true"
+                  className="w-[85%] sm:w-[80%] lg:w-[85%] h-8 sm:h-10 lg:h-14 -mt-4 sm:-mt-6 
+                  bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.95)_0%,rgba(0,0,0,0.5)_50%,transparent_75%)] blur-md sm:blur-lg
+                   rounded-full pointer-events-none"
+                />
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* ============================================================
-          4. VERTICAL PRODUCT NAVIGATION (Right Viewport Edge)
-         ============================================================ */}
-      <aside
-        aria-label="Product Navigation"
-        className="absolute right-4 sm:right-8 lg:right-12 top-1/2 -translate-y-1/2 z-30 hidden sm:flex flex-col items-center gap-4 bg-black/40 backdrop-blur-md py-4 px-2.5 rounded-full border border-white/10 shadow-lg"
-      >
-        {BEST_SELLERS.map((item, idx) => {
-          const isActive = activeIndex === idx;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleJumpToProduct(idx)}
-              aria-label={`Scroll to product ${item.name}`}
-              className="group flex items-center gap-2 cursor-pointer py-1 select-none"
-            >
-              {/* Visual Label */}
-              <span
-                className={`font-heading font-bold text-xs tracking-wider transition-all duration-300 ${
-                  isActive
-                    ? "text-[#E5B558] scale-115 opacity-100"
-                    : "text-white/40 group-hover:text-white/80 opacity-60"
-                }`}
-              >
-                {item.seriesNumber}
-              </span>
-
-              {/* Progress Bar Indicator */}
-              <span
-                className={`h-0.5 rounded-full transition-all duration-300 ${
-                  isActive
-                    ? "w-6 bg-[#E5B558]"
-                    : "w-2 bg-white/30 group-hover:bg-white/60 group-hover:w-3.5"
-                }`}
-              />
-            </button>
-          );
-        })}
-      </aside>
     </section>
   );
 };
